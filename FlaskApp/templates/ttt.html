@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tic Tac Toe</title>
+
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='style.css') }}"/>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script type="text/javascript" src="{{url_for('static', filename='jquery.cookie.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static', filename='script.js')}}"></script>
+</head>
+<body>
+    <center>
+        <h1 id="winner"></h1>
+        <h1> welcome <span id ="name"> {{ name }} </span> </h1>
+        <h2 id="score"></h2>
+    </center>
+    <div class="grid-container">
+        <div class="grid-item ttt" id="0"> </div>
+        <div class="grid-item ttt" id="1"> </div>
+        <div class="grid-item ttt" id="2"> </div>
+        <div class="grid-item ttt" id="3"> </div>
+        <div class="grid-item ttt" id="4"> </div>
+        <div class="grid-item ttt" id="5"> </div>
+        <div class="grid-item ttt" id="6"> </div>
+        <div class="grid-item ttt" id="7"> </div>
+        <div class="grid-item ttt" id="8"> </div>
+    </div>
+    <center>
+    	<h2 id="status2"></h2>
+    	<p id="out"> </p>
+    </center>
+
+</body>
+</html>

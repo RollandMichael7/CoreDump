@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tic Tac Toe</title>
+
+     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+     <script type="text/javascript">
+        function send() {
+            var formData = {'username' : $("#name").val(), 'password' : $("#pwd").val(), 'email' : $("#email").val()}
+            formData = JSON.stringify(formData)
+            console.log(formData)
+            $.ajax({
+                type: "POST",
+                url: "http://130.245.170.46/adduser",
+                data: formData,
+                dataType: "json",
+                crossDomain: true,
+                success: function() {
+                    alert("Thanks. Please check your email");
+                },
+                error: function() {
+                    alert("An error occured.");
+                }
+            });
+        }
+     </script>
+</head>
+<body>
+    <h3> hi. please enter your deets </h3>
+    <form id="myForm">
+        Name: <input type="text" id="name">
+        Password: <input type="text" id="pwd">
+        email: <input type="text" id="email">
+        <input type="button" value="Submit" onclick="send()">
+    </form>
+</body>
+</html>

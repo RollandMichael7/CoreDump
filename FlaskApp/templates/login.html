@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Login</title>
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='style.css') }}"/>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script type="text/javascript" src="{{url_for('static', filename='jquery.cookie.js')}}"></script>
+    <script>
+	var name
+	var grid
+	$(document).ready(function() {
+	    $("#playButton").hide()
+	});
+    	function login() {
+    		var data = {'username' : $("#username").val(), 'password' : $("#password").val()};
+    		data = JSON.stringify(data);
+    		console.log(data)
+    		$.ajax({
+    			type: 'POST',
+    			url: 'http://130.245.170.46/login',
+    			data: data,
+    			dataType: 'json',
+    			crossDomain: true,
+    			success: function(resp) {
+    				console.log(resp);
+    				//alert("Response: " + resp['status']);
+				console.log("New cookie: " + $.cookie("gamestatus"));
+				if (resp["status"] == 'OK') {
+				    $("#playButton").show();
+				    name = $("#username").val();
+				    grid = $.cookie("gamestatus");
+				}
+			},
+    			error: function(data) {
+				console.log(data);
+    				alert("An error occurred.");
+    			}
+    		})
+    	}
+    </script>
+</head>
+<body>
+	<h1> Welcome. Please log in </h1>
+	<form method='POST' action='http://130.245.170.46/play'>
+	    <input type='text' name='name' id='username' placeholder='Username'>
+	    <input type='text' id='password' placeholder='Password'>
+	    <input type='button' onclick='login()' value='Log in'>
+	    <input type='submit' id='playButton' value='Play'>
+	</form>
+	<p> New? Click <a href='http://130.245.170.46/register'> here </a> to register. </p>
+</body>
+</html>
