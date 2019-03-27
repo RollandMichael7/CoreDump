@@ -1,19 +1,13 @@
-.grid-container {
-  display: grid;
-  grid-template-columns: auto auto auto;
-  background-color: red;
-  padding: 1em;
-  margin: auto;
-  width: 50%;
+.centerForm {
+  margin: 0 auto;
+  width: 80%;
 }
-.grid-item {
-  background-color: rgba(255, 255, 255, 0.8);
-  border: .1em solid rgba(0, 0, 0, 0.8);
-  padding: 3em;
-  font-size: 2em;
-  text-align: center;
+
+.goodFont {
+	font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+	font-kerning: auto;
 }
-#status2 {
-  color: blue;
-  text-decoration: underline;
+
+.header {
+	font-size: 14px;
 }

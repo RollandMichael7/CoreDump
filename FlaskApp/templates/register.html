@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Register</title>
+
+     <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='style.css') }}"/>
+     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+     <script type="text/javascript">
+        function send() {
+            var formData = {'username' : $("#name").val(), 'password' : $("#pwd").val(), 'email' : $("#email").val()}
+            formData = JSON.stringify(formData)
+            console.log(formData)
+            $.ajax({
+                type: "POST",
+                url: "http://130.245.170.46/adduser",
+                data: formData,
+                dataType: "json",
+                crossDomain: true,
+                success: function(data) {
+                    if (data['status'] == 'OK') {
+			$("#output").text("") 
+                        $("#output").append('<span style="color: green;">Thanks! Please check your email.</span>');
+		    }
+                    else {
+			$("#output").text("")
+                        $("#output").append('<span style="color: red;">'+ data['error'] + "</span>");
+		    }
+                },
+                error: function() {
+                    alert("An error occured:");
+                }
+            });
+        }
+     </script>
+
+     <style>
+	form { display: table; }
+	p { display: table-row; }
+	label { display: table-cell; }
+	input { display: table-cell; }
+    </style>
+</head>
+<body>
+    <center>
+        <div class="goodFont">
+	    <a href="http://130.245.170.46/">
+            <img src="static/images/logo.png">
+	    </a>
+            <h2> hi. please enter your deets </h2>
+            <div style="width: 50%; margin: auto;">
+                <form id="myForm">
+                    <fieldset>
+                        <p>
+                        <label>Name </label>
+                        <input type="text" id="name">
+                        </p>
+                        <p>
+                        <label>Password &nbsp; &nbsp; &nbsp;</label>
+                        <input type="text" id="pwd">
+                        </p>
+                        <p>
+                        <label>email </label>
+                        <input type="text" id="email">
+                        </p>
+                        <br>
+                        <input type="button" value="Submit" onclick="send()">
+                    </fieldset>
+                </form>
+            </div>
+	    <br> <br>
+            <p id="output"></p>
+        </div>
+    </center>
+</body>
+</html>

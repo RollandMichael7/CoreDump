@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>The Core Dump</title>
+
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='style.css') }}"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script type="text/javascript" src="{{url_for('static', filename='jquery.cookie.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static', filename='script.js')}}"></script>
+</head>
+<body>
+	<div class="header">
+		{% if not loggedIn %}
+		<p> Welcome to The Core Dump! Please <a href="/login">login</a> or <a href="/register">register</a>.</p>
+		{% endif %}
+		{% if loggedIn %}
+		<p> Welcome {{ username }}! Click <a href="/logout">here</a> to logout.</p>
+		{% endif %}
+		<hr>
+	</div>
+	<div class="goodFont">
+		<center>
+		<img src="static/images/logo.png">
+		<div class="centerForm">
+			<form>
+			<fieldset>
+				<legend>Ask a question</legend>
+				<label>Title: </label> <input type="text" id="title">
+				<br> <br>
+				<label>Body: </label> <br> <textarea rows="10" cols="50" id="body"> </textarea>
+				<br> <br>
+				<label>Tags: </label> <input type="text" id="tags">
+				<br> <br> <br>
+				<input type="button" value="Submit" onclick="ask()">
+			</fieldset>
+			</form>
+		</div>
+		<br>
+		<br>
+		<h2 id='topQuestions'>Top Questions <br><br></h2>
+		</center>
+	</div>	
+</body>

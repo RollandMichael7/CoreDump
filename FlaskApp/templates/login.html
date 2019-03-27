@@ -25,13 +25,9 @@
     			crossDomain: true,
     			success: function(resp) {
     				console.log(resp);
-    				//alert("Response: " + resp['status']);
-				console.log("New cookie: " + $.cookie("gamestatus"));
-				if (resp["status"] == 'OK') {
-				    $("#playButton").show();
-				    name = $("#username").val();
-				    grid = $.cookie("gamestatus");
-				}
+					if (resp["status"] == 'OK') {
+					    $("#playButton").show();
+					}
 			},
     			error: function(data) {
 				console.log(data);
@@ -42,13 +38,18 @@
     </script>
 </head>
 <body>
-	<h1> Welcome. Please log in </h1>
-	<form method='POST' action='http://130.245.170.46/play'>
-	    <input type='text' name='name' id='username' placeholder='Username'>
-	    <input type='text' id='password' placeholder='Password'>
-	    <input type='button' onclick='login()' value='Log in'>
-	    <input type='submit' id='playButton' value='Play'>
-	</form>
-	<p> New? Click <a href='http://130.245.170.46/register'> here </a> to register. </p>
+	<center>
+		<a href="http://130.245.170.46/">
+		<img src="static/images/logo.png">
+		</a>
+		<h1> Welcome. Please log in </h1>
+		<form method='GET' action='http://130.245.170.46/'>
+		    <input type='text' name='name' id='username' placeholder='Username'>
+		    <input type='text' id='password' placeholder='Password'>
+		    <input type='button' onclick='login()' value='Log in'>
+		    <input type='submit' id='playButton' value="Let's go!">
+		</form>
+		<p> New? Click <a href='http://130.245.170.46/register'> here </a> to register. </p>
+	</center>
 </body>
 </html>

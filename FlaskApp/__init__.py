@@ -2,172 +2,52 @@ import json
 import sys
 import os
 import random
+import string
 import smtplib
-import pika
+import time
+from services import database
 from email.mime.text import MIMEText
-from pymongo import MongoClient
 from time import gmtime, strftime
 from flask import Flask, request, jsonify, render_template, make_response
 
 app = Flask(__name__)
 
-@app.route('/listen', methods=['POST'])
-def listen():
-    keys = request.get_json(force=True)['keys']
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
-    channel = connection.channel()
-    result = channel.queue_declare(exclusive=True)
-    for key in keys:        
-        channel.queue_bind(exchange='hw3', queue=result.method.queue, routing_key=key)
-    while True:
-        method, properties, msg = channel.basic_get(queue=result.method.queue)
-        if msg is not None:
-            channel.close()
-            connection.close()
-            return jsonify({'msg':msg})
-
-@app.route('/speak', methods=['POST'])
-def speak():
-    key = request.get_json(force=True)['key']
-    msg = request.get_json(force=True)['msg']
-    connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
-    channel = connection.channel()
-    channel.basic_publish(exchange='hw3', routing_key=key, body=msg)
-    channel.close()
-    connection.close()
-    return jsonify({'status':'OK'})
-
-# list of indices that u can win with
-indices = [
-    [0,1,2], [3,4,5], [6,7,8],
-    [0,3,6], [1,4,7], [2,5,8],
-    [0,4,8], [2,4,6]
-]
-
-@app.route('/play', methods=['POST'])
-def display_game_post():
-    name = request.form['name']
-    return render_template('ttt.html', name=name)
-
-@app.route('/play', methods=['GET'])
-def display_game_get():
-    try:
-        name = request.cookies['cse356user']
-    except KeyError:
-        return render_template('error.html')
-    if name == "":
-        return render_template('error.html')
-    return render_template('ttt.html', name=name)
-
-@app.route('/ttt/play', methods=['POST'])
-def play():
-    move = request.get_json(force=True)['move']
-    try:
-        user = request.cookies['cse356user']
-    except KeyError:
-        return jsonify({'status':'ERROR'})
-    userObject = getDoc(user)
-    if userObject is None:
-        return jsonify({'status':'ERROR'})
-    grid = userObject['gamestate']
-    if move is None:
-        return jsonify({'grid':grid})
-    else:
-        move = int(move)
-    grid[move] = 'X'
-    gameover = False
-    indices, winner = checkWin(grid)
-    if winner == ' ':
-        i = findSpot(grid)
-        if i is None:
-            gameover = True
-        else:
-            grid[i] = 'O'
-            indices, winner = checkWin(grid)
-    if winner != ' ' or gameover:
-        gameID = userObject['gameID']
-        start = userObject['gameStartDate']
-        userObject['completedGameList'].append({"id":gameID, "start_date":start})
-        userObject['completedGameStates'].append({"id":gameID, "grid":grid, "winner":winner})
-        if winner == 'X':
-            userObject['wins'] = userObject['wins'] + 1
-        elif winner == 'O':
-            userObject['losses'] = userObject['losses'] + 1
-        else:
-            userObject['ties'] = userObject['ties'] + 1
-        userObject['gameID'] = gameID + 1
-        userObject['gameStartDate'] = strftime("%Y-%m-%d", gmtime())
-        userObject['gamestate'] = [' ',' ',' ',' ',' ',' ',' ',' ',' ']
-        gameover = True
-    else:
-        userObject['gamestate'] = grid
-    users = getDB('users')
-    users.save(userObject)
-    resp =  make_response(jsonify({"grid": grid, "winner": winner}))
-    resp.set_cookie("cse356game", arr2string(grid))
-    if gameover:
-        resp.set_cookie("cse356gameover", "true")
-    else:
-        resp.set_cookie("cse356gameover", "false")
-    return resp
-
-@app.route('/listgames', methods=['POST'])
-def listGames():
-    try:
-        user = request.cookies['cse356user']
-    except KeyError:
-        return jsonify({'status':'ERROR'})
-    userObject = getDoc(user)
-    if userObject is None:
-        return jsonify({'status':'ERROR'})
-    return jsonify({'status':'OK', 'games':userObject['completedGameList']})
-
-@app.route('/getgame', methods=['POST'])
-def getGame():
-    try:
-        user = request.cookies['cse356user']
-    except KeyError:
-        return jsonify({'status':'ERROR'})
-    gameID = request.get_json(force=True)['id']
-    userObject = getDoc(user)
-    if userObject is None:
-        return jsonify({'status':'ERROR'})
-    for game in userObject['completedGameStates']:
-        if game['id'] == gameID:
-            return jsonify({"status":"OK","grid":game['grid'],"winner":game['winner']})
-    return jsonify({'status':'ERROR'})
-
-@app.route('/getscore', methods=['POST'])
-def getScore():
-    try:
-        user = request.cookies['cse356user']
-    except KeyError:
-        return jsonify({'status':'ERROR'})
-    userObject = getDoc(user)
-    if userObject is None:
-        return jsonify({'status':'ERROR'})
-    return jsonify({'status':'OK', 'human':userObject['wins'], 'wopr':userObject['losses'], 'tie':userObject['ties']})
-
 @app.route('/', methods=['GET'])
 def default():
-    return render_template('splash.html')
+    try:
+        username = request.cookies['cse356user']
+        user = database.getDoc('users', {'username':username, 'enabled':True})
+        if user is not None:
+            return render_template('main.html', loggedIn=True, username=username)
+    except KeyError:
+        pass
+    return render_template('main.html', loggedIn=False, username="")
 
 @app.route('/register', methods=['GET'])
 def register():
-    return render_template('splash.html')
+    return render_template('register.html')
 
 @app.route('/adduser', methods=['POST'])
 def adduser():
     uname = request.get_json(force=True)['username']
     pwd = request.get_json(force=True)['password']
     email = request.get_json(force=True)['email']
-    users = getDB('users')
+    users = database.getDB('users')
 
-    userObject = { 'name':uname, 'password':pwd, 'email':email, 'key':'abracadabra', 'enabled':False, 'gamestate':[], 'gameID':[], 'gameStartDate':"", 'completedGameStates':[], 'completedGameList':[], 'wins':0, 'losses':0, 'ties':0}
+    doc = database.getDoc('users', {'username':uname})
+    if doc is not None:
+        return jsonify({'status':'error', 'error':'That username is already in use.'})
+    doc = database.getDoc('users', {'email':email})
+    if doc is not None:
+        return jsonify({'status':'error', 'error':'That email is already in use.'})
+
+    key = ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(16))
+    userObject = { 'username':uname, 'password':pwd, 'email':email, 'key':key, 'enabled':False, 'reputation':0}
+    #'gamestate':[], 'gameID':[], 'gameStartDate':"", 'completedGameStates':[], 'completedGameList':[], 'wins':0, 'losses':0, 'ties':0}
     users.insert(userObject)
 
-    verify = "http://130.245.170.46/verify?key=abracadabra&email=" + email
-    msg = MIMEText("Hi " + uname + "! Please use this link to verify your account: " + verify)
+    verify = "http://130.245.170.46/verify?key=" + key + "&email=" + email
+    msg = MIMEText("Hi " + uname + "! Please use this link to verify your account: " + verify + "\n\nvalidation key: <" + key + ">")
     #me = os.environ['MAIL_USER']
     me = "flaskbot356@gmail.com"
     to = email
@@ -185,17 +65,17 @@ def adduser():
 def verify_get():
     email = request.args.get('email')
     key = request.args.get('key')
-    status = verify(email, key)
+    status = database.verify(email, key)
     if status['status'] == 'OK':
         return render_template('register_success.html')
     else:
-        return render_template('register_fail.html')
+        return render_template('register_fail.html', error=status['error'])
 
 @app.route('/verify', methods=['POST'])
 def verify_post():
     email = request.get_json(force=True)['email']
     key = request.get_json(force=True)['key']
-    return jsonify(verify(email, key))
+    return jsonify(database.verify(email, key))
 
 @app.route('/login', methods=['GET'])
 def display_login():
@@ -205,105 +85,165 @@ def display_login():
 def login():
     uname = request.get_json(force=True)['username']
     pwd = request.get_json(force=True)['password']
-    user = getDoc(uname, password=pwd)
+    user = database.getDoc('users', {'username':uname, 'password':pwd, 'enabled':True})
     if user is not None:
         resp = make_response(jsonify({'status':'OK'}))
-        resp.set_cookie('cse356game',arr2string(user['gamestate']))
-        resp.set_cookie('cse356user', str(user['name']))
+        resp.set_cookie('cse356user', str(user['username']))
         return resp
-    return jsonify({'status':'ERROR'})
+    return jsonify({'status':'error', 'error':'Invalid credentials.'})
 
 @app.route('/logout', methods=['POST', 'GET'])
 def logout():
-    resp = make_response(jsonify({'status':'OK'}))
+    if request.method == 'POST':
+        resp = make_response(jsonify({'status':'OK'}))
+    else:
+        resp = make_response(render_template('logout.html'))
     resp.set_cookie('cse356user', "")
-    resp.set_cookie('cse356game', "")
     return resp
 
-def getDB(collection):
-    client = MongoClient('localhost', 27017)
-    db = client['cse356']
-    collection = db[collection]
-    return collection
+############### q & a ###############
 
-def getDoc(user, password=None):
-    db = getDB('users')
-    for doc in db.find():
-        if password is not None:
-            if doc['enabled'] and doc['name'] == user and doc['password'] == password:
-                return doc
-        else:
-            if doc['enabled'] and doc['name'] == user:
-                return doc
-    return None
+@app.route('/questions/<qID>/view', methods=['GET'])
+def view_question(qID):
+    print("GET to questions/" + qID + "/view")
+    question = database.getDoc('questions', {'id':qID})
+    if question is None:
+        return render_template('notfound.html')
+    return render_template('question.html', username=question['user']['username'], title=question['title'], body=question['body'])
 
-def verify(email, key):
-    users = getDB('users')
-    for doc in users.find():
-        if doc['email'] == email and (key == doc['key'] or key == "abracadabra"):
-            user = doc
-            user['enabled'] = True
-            user['gamestate'] = [' ',' ',' ',' ',' ',' ',' ', ' ',' ']
-            user['gameID'] = 1
-            user['gameStartDate'] = strftime("%Y-%m-%d", gmtime())
-            users.save(user)
-            return {'status': 'OK'}
-    return {'status':'ERROR'}
+@app.route('/questions/add', methods=['POST'])
+def add_question():
+    try:
+        username = request.cookies['cse356user']
+    except KeyError:
+        return jsonify({'status':'error', 'error':'You are not logged in.'})
+    user = database.getDoc('users', {'username':username, 'enabled':True})
+    if user is None:
+        return jsonify({'status':'error', 'error':'Invalid credentials.'})
+    try:
+        title = request.get_json(force=True)['title']
+        body = request.get_json(force=True)['body']
+        tags = request.get_json(force=True)['tags']
+    except KeyError:
+        return jsonify({'status':'error', 'error':'Title, body and tags required.'})
 
-def arr2string(a):
-    s = ""
-    for c in a:
-        s += str(c)
-    return s
+    db = database.getDB('questions')
+    qID = database.getID()
+    qObject = {'id':qID, 'user':{'username':username, 'reputation':user['reputation']},
+                'title':title, 'body':body, 'score':0, 'view_count':0, 'answer_count':0,
+                'timestamp':time.time(), 'media':[], 'tags':tags, 'accepted_answer_id':None,
+                'viewer_usernames':[], 'viewer_IPs':[]}
+    db.insert(qObject)
+    return jsonify({'status':'OK', 'id':qID})
 
-def checkWin(grid):
-    for l in indices:
-        if compare(grid, l[0], l[1], l[2]):
-            return l, grid[l[0]]
-    return None, ' '
 
-# if player using C is about to win with indices x,y,z
-# return the winning index. else, return -1
-def canWin(grid, c, x, y, z):
-    if grid[x] == c and grid[x] == grid[y] and grid[z] == ' ':
-        return z
-    elif grid[y] == c and grid[y] == grid[z] and grid[x] == ' ':
-        return x
-    elif grid[z] == c and grid[z] == grid[x] and grid[y] == ' ':
-        return y
+@app.route('/questions/<qID>', methods=['GET'])
+def show_question(qID):
+    question = database.getDoc('questions', {'id':qID})
+    if question is None:
+        return jsonify({'status':'error','error':'Invalid question ID.'})
+    try:
+        username = request.cookies['cse356user']
+    except KeyError:
+        username = None
+    user = None
+    loggedIn = False
+    if username is not None and username != '':
+        user = database.getDoc('users', {'username':username, 'enabled':True})
+        if user is not None:
+            loggedIn = True
+    if loggedIn:
+        if user['username'] not in question['viewer_usernames']:
+            question['view_count'] = question['view_count'] + 1
+            question['viewer_usernames'].append(user['username'])
     else:
-        return -1
+        if request.remote_addr not in question['viewer_IPs']:
+            question['view_count'] = question['view_count'] + 1
+            question['viewer_IPs'].append(request.remote_addr)
+    db = database.getDB('questions')
+    db.save(question)
 
-# find somewhere to place O
-def findSpot(grid):
-    # first make sure theres an empty spot
-    valid = False
-    for c in grid:
-        if c == ' ':
-            valid = True
-            break
-    if not valid:
-        return None
-    # check if we can win
-    for l in indices:
-        x = canWin(grid, 'O', l[0], l[1], l[2])
-        if x != -1:
-            #sys.stderr.write('ttt: can win at ' + str(x) + '\n')
-            return x
-    # check if the player is about to win
-    for l in indices:
-        x = canWin(grid, 'X', l[0], l[1], l[2])
-        if x != -1:
-            #sys.stderr.write('ttt: player about to win at ' + str(x) + '\n')
-            return x
-    # else, place in random open spot
-    while True:
-        i = random.randint(0,8)
-        if grid[i] == ' ':
-            return i
+    question.pop('_id', None)
+    question.pop('viewer_usernames', None)
+    question.pop('viewer_IPs', None)
+    return jsonify({'status':'OK','question':question})
 
-def compare(grid, x, y, z):
-    return grid[x] != ' ' and grid[x]==grid[y] and grid[y]==grid[z]
+
+@app.route('/questions/<qID>/answers/add', methods=['POST'])
+def add_answer(qID):
+    question = database.getDoc('questions', {'id':qID})
+    if question is None:
+        return jsonify({'status':'error','error':'Invalid question ID.'})
+    try:
+        username = request.cookies['cse356user']
+    except KeyError:
+        return jsonify({'status':'error', 'error':'You are not logged in.'})
+    user = database.getDoc('users', {'username':username, 'enabled':True})
+    if user is None:
+        return jsonify({'status':'error','error':'Invalid credentials.'})
+
+    try:
+        body = request.get_json(force=True)['body']
+    except KeyError:
+        return jsonify({'status':'error', 'error':'Body required.'})
+    try:
+        media = request.get_json(force=True)['media']
+    except KeyError:
+        media = []
+    aID = database.getID()
+    answer = {'id':aID, 'user':username, 'body':body, 'score':0, 'is_accepted':False,
+              'timestamp':time.time(), 'media':media, 'qID':qID}
+    db = database.getDB('answers')
+    db.insert(answer)
+    return jsonify({'status':'OK', 'id':aID})
+
+
+@app.route('/questions/<qID>/answers', methods=['GET'])
+def get_answers(qID):
+    question = database.getDoc('questions', {'id':qID})
+    if question is None:
+        return jsonify({'status':'error', 'error':'Invalid question ID.'})
+    answers = database.getMatchingAnswers(qID)
+    for a in answers:
+        a.pop('_id', None)
+        a.pop('qID', None)
+    return jsonify({'status':'OK', 'answers':answers})
+
+
+@app.route('/search', methods=['POST'])
+def search_questions():
+    try:
+        timestamp = request.get_json(force=True)['timestamp']
+    except KeyError:
+        timestamp = time.time()
+    try:
+        limit = request.get_json(force=True)['limit']
+    except KeyError:
+        limit = 25
+    if limit > 100:
+        limit = 100
+    questions = database.searchQuestions(timestamp, limit)
+    for q in questions:
+        q.pop('_id', None)
+        q.pop('viewer_usernames', None)
+        q.pop('viewer_IPs', None)
+    return jsonify({'status':'OK', 'questions':questions})
+
+@app.route('/topQuestions', methods=['POST'])
+def top_questions():
+    #try:
+    #    limit = request.get_json(force=True)['limit']
+    #except KeyError:
+    #    limit = 10
+    questions = database.getTopQuestions(10)
+    if questions is None:
+        return jsonify({'questions':[]})
+    for q in questions:
+        q.pop('_id', None)
+        q.pop('viewer_IPs', None)
+        q.pop('viewer_usernames', None)
+    return jsonify({'questions':questions})
+
 
 @app.after_request
 def add_headers(response):

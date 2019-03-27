@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title> {{ title }} </title>
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='style.css') }}"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script type="text/javascript" src="{{url_for('static', filename='jquery.cookie.js')}}"></script>
+
+    <style>
+ 	.indent {
+    		position: relative;
+		left: 2em;
+    	}
+    	#title {
+    		color: darkred;
+	}
+	#body {
+		font-size: 1.5em;
+	}
+	.h1 {
+                font-size: 1.4em;
+        }
+        .h2 {
+                font-size: 1.3em;
+        }
+
+    </style>
+</head>
+<body>
+	<div class="goodFont">
+	<div class="indent">
+		<h1 id="title"> {{ title }} </h1>
+	</div>
+	<center style="border: 1px solid black; width: 70%; margin: auto;">
+	<p id="body"> {{ body }} </p>
+	</center>
+	<p> Submitted by <span style="color: blue;"> {{ username }} </span> </p>
+
+	<br>
+	<br>
+	<br>
+	<div class="indent">
+		<h2> Answers </h2>
+	</div>
+	</div>
+</body>
