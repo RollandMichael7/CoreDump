@@ -1,10 +1,12 @@
 import string
 import random
+import time
+import pymongo
 from operator import itemgetter
-from pymongo import MongoClient
+#from cassandra.cluster import Cluster
 
 def getDB(collection):
-    client = MongoClient('localhost', 27017)
+    client = pymongo.MongoClient('192.168.122.10', 27017)
     db = client['cse356']
     collection = db[collection]
     return collection
@@ -45,19 +47,24 @@ def getMatchingAnswers(qID):
             answers.append(answer)
     return answers
 
-def searchQuestions(timestamp, limit):
-    questions = []
-    questionDB = getDB('questions')
-    for question in questionDB.find():
+def searchQuestions(timestamp, limit, query=None):
+    matches = []
+    db = getDB('questions')
+    if query is not None and query != "":
+        db.create_index([('title', 'text'), ('body', 'text')], default_language='none')
+        questions = db.find({'$text': {'$search':query}})
+    else:
+        questions = db.find()
+    for question in questions:
         if question['timestamp'] <= timestamp:
-            questions.append(question)
-            if len(questions) == limit:
-                return questions
-    return questions
+            matches.append(question)
+            if len(matches) == limit:
+                return matches
+    return matches
 
 def getTopQuestions(limit):
     top = []
-    sortedQs = getDB('questions').find().sort("view_count")
+    sortedQs = getDB('questions').find().sort("view_count", pymongo.DESCENDING)
     for q in sortedQs:
         top.append(q)
         if len(top) == limit:
@@ -65,4 +72,42 @@ def getTopQuestions(limit):
     return top
 
 def getID():
-    return ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(16))
+    questions = getDB('questions')
+    answers = getDB('answers')
+    new = True
+    start = True
+    while start or not new:
+        start = False
+        new = True
+        newID = ''.join(random.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(16))
+        for q in questions.find():
+            if q['id'] == newID:
+                new = False
+        if not new:
+            continue
+        for a in answers.find():
+            if a['id'] == newID:
+                new = False
+    return newID
+
+#def cassandraInsert(filename, contents):
+#    cluster = Cluster()
+#    session = cluster.connect('hw5')
+#    print("------------INSERTING " + filename)
+#    session.execute("""
+#                    INSERT INTO imgs (filename, contents)
+#                    VALUES (%s, %s)
+#                    """,
+#                    (filename, contents))
+#    return 0
+
+#def cassandraSelect(filename):
+#    cluster = Cluster()
+#    session = cluster.connect('hw5')
+#    data = session.execute("""
+#                            SELECT contents FROM imgs WHERE filename=%s;
+#                            """,
+#                            (filename,))
+#    for o in data:
+#        return o.contents;
+#    return None;

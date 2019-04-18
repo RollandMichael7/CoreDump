@@ -1,46 +1,83 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title> {{ title }} </title>
+	<meta id="qID" data-content="{{ id }}">
+	<title> {{ question.title }} </title>
 	<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='style.css') }}"/>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script type="text/javascript" src="{{url_for('static', filename='jquery.cookie.js')}}"></script>
+    <script type="text/javascript" src="{{url_for('static', filename='script.js')}}"></script>
 
     <style>
- 	.indent {
-    		position: relative;
-		left: 2em;
+	 	.indent {
+			position: relative;
+			left: 2em;
+		}
+		#qtitle {
+			color: darkred;
+		}
+		#qbody {
+			text-align: left;
+			font-size: 1.5em;
+		}
+		h1 {
+	        font-size: 1.4em;
+	    }
+	    h2 {
+	        font-size: 1.3em;
+	    }
+	    a.nostyle:link, a.nostyle:visited {
+	    	text-decoration: inherit;
+	    	color: inherit;
+	    	cursor: pointer;
     	}
-    	#title {
-    		color: darkred;
-	}
-	#body {
-		font-size: 1.5em;
-	}
-	.h1 {
-                font-size: 1.4em;
-        }
-        .h2 {
-                font-size: 1.3em;
-        }
-
     </style>
 </head>
 <body>
-	<div class="goodFont">
-	<div class="indent">
-		<h1 id="title"> {{ title }} </h1>
-	</div>
-	<center style="border: 1px solid black; width: 70%; margin: auto;">
-	<p id="body"> {{ body }} </p>
+	<center>
+		<a href="http://130.245.170.46/">
+	        <img src="/static/images/logo.png">
+	    </a>
 	</center>
-	<p> Submitted by <span style="color: blue;"> {{ username }} </span> </p>
+	<div class="goodFont">
+		<div class="indent">
+			<h1 id="qtitle"> {{ question.title }} </h1>
+		</div>
+		<center style="border: 1px solid black; width: 70%; margin: auto;">
+			<p id="qbody"> {{ question.body }} </p>
+			<br> <br> <br>
+			<p> <span style="color: blue;">Tags: </span>&nbsp; <span style="color: lightblue;"> 
+			{% for tag in question.tags %}
+				&nbsp; <a class="nostyle" href="/questions/tagged/{{tag}}"> {{ tag }} </a>&nbsp;
+			{% endfor %}
+			</span> </p>
+		</center>
+		<p> Submitted by <span style="color: blue;"> <a class="nostyle" href="/user/{{question.user.username}}/view"> {{ question.user.username }} </a> </span> on {{ timestamp }} UTC</p>
 
-	<br>
-	<br>
-	<br>
-	<div class="indent">
-		<h2> Answers </h2>
-	</div>
+		<br>
+		<br>
+		<br>
+		<div class="indent">
+			<h2> Answers </h2>
+			<hr>
+			{% for answer in answers %}
+				<br>
+				<p> {{ answer.body }} </p>
+				<br> <br>
+				<p> Submitted by <span style="color: blue;"> <a class="nostyle" href="/user/{{answer.user}}/view"> {{ answer.user }} </a> </span> on {{ answer.timestamp }} UTC </p>
+				<hr>
+			{% endfor %}
+			<br> <br>
+			<form>
+			<fieldset style="width:70%;">
+				<legend>Submit an answer</legend>
+				<br> 
+				<textarea rows="15" cols="100%" id="abody"> </textarea>
+				<br> <br>
+				<input type="button" value="Submit" onclick="answer()">
+			</fieldset>
+			</form>
+			<p id="output"></p>
+		</div>
 	</div>
 </body>

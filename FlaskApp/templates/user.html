@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta id="qID" data-name="{{ id }}">
+	<title> {{ user.username }} </title>
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='style.css') }}"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script type="text/javascript" src="{{url_for('static', filename='jquery.cookie.js')}}"></script>
+
+    <style>
+	 	.indent {
+			position: relative;
+			left: 2em;
+		}
+		#title {
+			color: darkred;
+		}
+		#body {
+			text-align: left;
+			font-size: 1.5em;
+		}
+		h1 {
+	        font-size: 1.4em;
+	    }
+	    h2 {
+	        font-size: 1.3em;
+	    }
+    </style>
+</head>
+<body>
+	<center>
+		<a href="http://130.245.170.46/">
+	        <img src="/static/images/logo.png">
+	    </a>
+	</center>
+	<div class="goodFont">
+		<h1 style="color: blue;"> {{ user.username }} </h1>
+		<h2> Reputation: 
+			{% if user.reputation < 10 %} 
+				<span style="color:red;">
+			{% elif user.reputation < 25 %}
+				<span style="color:orange;">
+			{% elif user.reputation < 50 %}
+				<span style="color:yellow;">
+			{% else %}
+				<span style="color:green;">
+			{% endif %}
+			{{ user.reputation }} </span> </h2>
+
+		<br> <br>
+		<p> Contact {{ user.username }} at <a href="mailto:{{ user.email }}"> {{ user.email }} </a> </p>
+
+	</div>
+</body>

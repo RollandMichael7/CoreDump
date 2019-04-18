@@ -4,19 +4,30 @@
     <title>The Core Dump</title>
 
     <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='style.css') }}"/>
+    <link rel="icon" type="image/x-icon" href={{ url_for('static', filename='favicon.ico') }}">
+    <link rel="shortcut icon" type="image/x-icon" href={{ url_for('static', filename='favicon.ico') }}">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css" integrity="sha384-50oBUHEmvpQ+1lW4y57PTFmhCaXp0ML5d60M1M7uH2+nqUivzIebhndOJK28anvf" crossorigin="anonymous">
+
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script type="text/javascript" src="{{url_for('static', filename='jquery.cookie.js')}}"></script>
     <script type="text/javascript" src="{{url_for('static', filename='script.js')}}"></script>
+
+    <script>
+    	function search() {
+    		window.open("http://130.245.170.46/search?limit=10&query=" + $("#query").val(), "_self");
+    	}
+    </script>
 </head>
 <body>
 	<div class="header">
 		{% if not loggedIn %}
-		<p> Welcome to The Core Dump! Please <a href="/login">login</a> or <a href="/register">register</a>.</p>
+		<p> <span style="text-align:left;"> Welcome to The Core Dump! Please <a href="/login">login</a> or <a href="/register">register</a>.</span>
 		{% endif %}
 		{% if loggedIn %}
-		<p> Welcome {{ username }}! Click <a href="/logout">here</a> to logout.</p>
+		<p> <span style="text-align:left;"> Welcome {{ username }}! Click <a href="/logout">here</a> to logout.</span>
 		{% endif %}
+		<span style="float:right;"><input id="query" type="text"> <button class="icon" onclick="search()"><i class="fas fa-search"></i></button></span></p>
 		<hr>
 	</div>
 	<div class="goodFont">
@@ -26,19 +37,22 @@
 			<form>
 			<fieldset>
 				<legend>Ask a question</legend>
-				<label>Title: </label> <input type="text" id="title">
+				<label>Title: </label> <input type="text" id="title" size="32">	
 				<br> <br>
-				<label>Body: </label> <br> <textarea rows="10" cols="50" id="body"> </textarea>
+				<label>Body: </label> <br> <textarea rows="10" cols="80%" id="body"> </textarea>
 				<br> <br>
 				<label>Tags: </label> <input type="text" id="tags">
 				<br> <br> <br>
 				<input type="button" value="Submit" onclick="ask()">
 			</fieldset>
 			</form>
+			<p id="output"></p>
 		</div>
 		<br>
 		<br>
-		<h2 id='topQuestions'>Top Questions <br><br></h2>
+		<h2> Top Questions </h2>
+		<br>
+		<h2 id='topQuestions'></h2>
 		</center>
 	</div>	
 </body>
